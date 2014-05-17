@@ -1,40 +1,38 @@
 /* usb_vcp.h Definitions for the virtual com port module */
 
 #if !defined(USB_VCP_H)
-
 #define USB_VCP_H
 
-/* Application related definitions */
+#include "stdint.h"
 
-#define VCP_BUF_IN_LEN			128U
+/* Buffer length */
+#define VCP_BUF_LEN			128U
 
 /* SW flags */
-
-#define VCP_DATA_AVAIL			0x01U
+#define F_VCP_DATA_AVAIL			0x01U
 
 /* Data types */
+typedef struct Vcp_Control Vcp_Control;
 
 struct Vcp_Control{
-	unsigned char data_count;
-	unsigned char flags;
-	unsigned char idx_in;
-	unsigned char idx_out;
-	unsigned char *buffer;
+	uint8_t flags;
+	uint8_t idx_in;
+	uint8_t idx_out;
+	uint8_t *buf;
 };
 
 /* Routines */
+void Vcp_Define (Vcp_Control *vcp,
+								uint8_t *buf);
 
-void Vcp_Define (struct Vcp_Control *vcp,
-								unsigned char *buffer);
+void Vcp_Process (Vcp_Control *vcp);
 
-void Vcp_Process (struct Vcp_Control *vcp);
+uint8_t Vcp_Store(Vcp_Control *vcp);
 
-unsigned char Vcp_Store(struct Vcp_Control *vcp);
+uint8_t Vcp_Data_Avail(Vcp_Control *vcp);
 
-unsigned char Vcp_Data_Avail(struct Vcp_Control *vcp);
+uint8_t Vcp_Get_Data(Vcp_Control *vcp);
 
-unsigned char Vcp_Take_Data(struct Vcp_Control *vcp);
-
-void Vcp_Flush_Buffer(struct Vcp_Control *vcp);
+void Vcp_Flush_Buffer(Vcp_Control *vcp);
 
 #endif

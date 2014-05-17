@@ -16,7 +16,7 @@
 /* Periods */		/* Each time unit is equal to 1 ms	*/
 
 #define TEST_PERIOD_NUM			0
-#define TEST_PERIOD_VAL			10000
+#define TEST_PERIOD_VAL			5000
 
 /* Timeouts */
 

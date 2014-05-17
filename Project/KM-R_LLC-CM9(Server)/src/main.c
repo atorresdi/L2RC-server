@@ -1,6 +1,9 @@
 /* Includes ------------------------------------------------------------------*/
 #include "timing.h"
 #include "usb_vcp.h"
+#include "protocol_rx.h"
+#include "protocol_tx.h"
+
 #include "debug.h"
 
 /* Includes ------------------------------------------------------------------*/
@@ -12,8 +15,10 @@
 #ifdef DEBUG_ENABLE
 /* Test variables---------------------------------*/
 unsigned char rx_count = 0;
+uint8_t count = 255;
 unsigned int i;
 unsigned int j;
+uint8_t state = 255;
 unsigned char vcp_test_var[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,\
 												 36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,\
 												 69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,\
@@ -40,8 +45,19 @@ struct Tm_Period periods[NUM_PERIOD];		/* NUM_PERIOD can be set in timing.h */
 unsigned int timeouts[NUM_TIMEOUT];			/* NUM_TIMEOUT can be set in timing.h */
 
 /* Virtual COM port module variables */
-struct Vcp_Control c_vcp;
-unsigned char vcp_buf_in[VCP_BUF_IN_LEN];
+Vcp_Control c_vcp;
+uint8_t vcp_buf_in[VCP_BUF_LEN];
+
+/* Communication protocol secuence number */
+uint8_t prot_sec_num = 0;
+
+/* Communication protocol receiver variables */
+Prx_Control c_prx;
+uint8_t prx_cmd_buf[PRX_CMD_BUF_LEN];
+
+/* Communication protocol transmiter variables */
+Ptx_Control c_ptx;
+Ptx_Request ptx_rqst_buf[PTX_RQST_BUF_LEN];
 
 int main(void)
 {			
@@ -53,9 +69,6 @@ int main(void)
 	Db_Define();
 	Tm_Start_Period(&c_time, TEST_PERIOD_NUM, TEST_PERIOD_VAL);
 	#endif
-	
-	/* Virtual COM port module initialization */
-	Vcp_Define(&c_vcp, vcp_buf_in);
 
 	/* USB VCP initialization */
 	Set_System();
@@ -63,6 +76,15 @@ int main(void)
 	USB_Interrupts_Config();
 	USB_Init();
 	Receive_length = 0;
+	
+	/* Virtual COM port module initialization */
+	Vcp_Define(&c_vcp, vcp_buf_in);
+	
+	/* Communication protocol receiver initialization */
+	Prx_Define(&c_prx, &prot_sec_num, prx_cmd_buf, PRX_CMD_BUF_LEN);
+	
+	/* Communication protocol transmiter initialization */
+	Ptx_Define(&c_ptx, &prot_sec_num, ptx_rqst_buf, PTX_RQST_BUF_LEN);
 	
 	while (bDeviceState != CONFIGURED){	};
 	
@@ -83,32 +105,55 @@ int main(void)
 			if (Receive_length > 0)
 				Vcp_Process(&c_vcp);
 			
+			Prx_Process(&c_prx);
+			
+			Ptx_Process(&c_ptx);			
+			
 			#ifdef DEBUG_ENABLE
 			
-			if (Tm_Period_Complete(&c_time, TEST_PERIOD_NUM))
-			{
-				Db_Print_Line(" ");
-				Tm_Clean_Period(&c_time, TEST_PERIOD_NUM);
-				CDC_Send_DATA(&vcp_test_var[33],64);
-			}
-			
-			if (Vcp_Data_Avail(&c_vcp))
-			{
-				Db_Print_Val(Vcp_Take_Data(&c_vcp), ASTERISK);
+				if (Tm_Period_Complete(&c_time, TEST_PERIOD_NUM))
+				{
+					Db_Print_Line(" ");
+					Tm_Clean_Period(&c_time, TEST_PERIOD_NUM);
+// 					Ptx_Add_Cmd_Rqst(&c_ptx, vcp_test_var[i]);
+// 					CDC_Send_DATA("A", 1);
+				};
 				
-				rx_count++;
+				if (Prx_Cmd_Avail(&c_prx))
+				{
+					Db_Print_Val(Prx_Get_Cmd(&c_prx), HASH);
+					rx_count++;
+				};
 				
 				if (rx_count >= 16)
-				{
-					CDC_Send_DATA(&vcp_test_var[j*16],16);
+				{					
+					for ( i = j*16 ; i <= ((j + 1)*16 - 1); i++)
+						Ptx_Add_Cmd_Rqst(&c_ptx, vcp_test_var[i]);
 
 					rx_count = 0;
 					j++;
 				};
-			};
 			
-			if (j >= 16)
-				j = 0;
+				if (j >= 16)
+					j = 0;
+// 				
+// 				if (rx_count != count)
+// 				{
+// 					count = rx_count;
+// 					Db_Print_Val(count, TILDE);
+// 				}
+				
+// 				if (c_prx.state != state)
+// 				{
+// 					state = c_prx.state;
+// 					Db_Print_Val(state, TILDE);
+// 				};
+
+// 				if (c_ptx.state != state)
+// 				{
+// 					state = c_ptx.state;
+// 					Db_Print_Val(state, TILDE);
+// 				};
 			#endif
 		}
 		else
