@@ -16,9 +16,10 @@
 /* Test variables---------------------------------*/
 unsigned char rx_count = 0;
 uint8_t count = 255;
-unsigned int i;
+uint16_t i;
 unsigned int j;
 uint8_t state = 255;
+Pro_Package *pkg;
 unsigned char vcp_test_var[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,\
 												 36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,\
 												 69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,\
@@ -54,6 +55,8 @@ uint8_t prot_sec_num = 0;
 /* Communication protocol receiver variables */
 Prx_Control c_prx;
 uint8_t prx_cmd_buf[PRX_CMD_BUF_LEN];
+Pro_Package prx_pkg_buf[PRX_PKG_BUF_LEN];
+uint8_t prx_pkg_data[PRX_PKG_BUF_LEN][PRX_MAX_PKG_DATA_LEN];
 
 /* Communication protocol transmiter variables */
 Ptx_Control c_ptx;
@@ -81,7 +84,13 @@ int main(void)
 	Vcp_Define(&c_vcp, vcp_buf_in);
 	
 	/* Communication protocol receiver initialization */
-	Prx_Define(&c_prx, &prot_sec_num, prx_cmd_buf, PRX_CMD_BUF_LEN);
+	Prx_Define(&c_prx,
+						 &prot_sec_num,
+						 prx_cmd_buf,
+						 PRX_CMD_BUF_LEN,
+						 prx_pkg_buf,
+						 PRX_PKG_BUF_LEN,
+						 prx_pkg_data);
 	
 	/* Communication protocol transmiter initialization */
 	Ptx_Define(&c_ptx, &prot_sec_num, ptx_rqst_buf, PTX_RQST_BUF_LEN);
@@ -119,35 +128,25 @@ int main(void)
 // 					CDC_Send_DATA("A", 1);
 				};
 				
-				if (Prx_Cmd_Avail(&c_prx))
+				if (Prx_Pkg_Avail(&c_prx) && (c_prx.pkg_idx_in == 1))
 				{
-					Db_Print_Val(Prx_Get_Cmd(&c_prx), HASH);
-					rx_count++;
+					pkg = Prx_Get_Pkg(&c_prx);
+					
+					Db_Print_Val(pkg->length, PLUS);
+					Db_Print_Val(pkg->opts, MINUS);
+					Db_Print_Val(pkg->ptsf, SLASH);
+					
+					for (i = 0; i < pkg->length; i++)
+						Db_Print_Val(pkg->data[i], ASTERISK);
+					
+					Prx_Ckout_Curr_Pkg(&c_prx);
 				};
 				
-				if (rx_count >= 16)
-				{					
-					for ( i = j*16 ; i <= ((j + 1)*16 - 1); i++)
-						Ptx_Add_Cmd_Rqst(&c_ptx, vcp_test_var[i]);
-
-					rx_count = 0;
-					j++;
+				if (c_prx.state != state)
+				{
+					state = c_prx.state;
+					Db_Print_Val(state, TILDE);
 				};
-			
-				if (j >= 16)
-					j = 0;
-// 				
-// 				if (rx_count != count)
-// 				{
-// 					count = rx_count;
-// 					Db_Print_Val(count, TILDE);
-// 				}
-				
-// 				if (c_prx.state != state)
-// 				{
-// 					state = c_prx.state;
-// 					Db_Print_Val(state, TILDE);
-// 				};
 
 // 				if (c_ptx.state != state)
 // 				{

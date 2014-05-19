@@ -8,6 +8,22 @@
 /* Extern variables */
 extern Prx_Control c_prx;
 
+/* Static routines ------------------------------------------- */
+/* Check out the current request */
+static void Ptx_Ckout_Curr_Rqst(Ptx_Control *ptp)
+{
+	if (ptp->idx_out)
+		--(ptp->idx_out);
+	else
+		ptp->idx_out = ptp->buf_len - 1;
+	
+	if (ptp->idx_in == ptp->idx_out)
+		ptp->curr_rqst = 0;
+	else
+		ptp->curr_rqst = &(ptp->rqst_buf[ptp->idx_out]);
+}
+/* --------------------------------------------Static routines */
+
 /* Initialization */
 void Ptx_Define(Ptx_Control *ptp,
 								uint8_t *sec_num,
@@ -108,18 +124,4 @@ uint8_t Ptx_Add_Cmd_Rqst(Ptx_Control *ptp, uint8_t cmd)
 		ptp->idx_in = ptp->buf_len - 1;
 	
 	return 1;
-}
-
-/* Check out the current request */
-void Ptx_Ckout_Curr_Rqst(Ptx_Control *ptp)
-{
-	if (ptp->idx_out)
-		--(ptp->idx_out);
-	else
-		ptp->idx_out = ptp->buf_len - 1;
-	
-	if (ptp->idx_in == ptp->idx_out)
-		ptp->curr_rqst = 0;
-	else
-		ptp->curr_rqst = &(ptp->rqst_buf[ptp->idx_out]);
 }

@@ -6,8 +6,8 @@
 #include "stdint.h"
 
 /* Requests buffer length */
-// #define PTX_RQST_BUF_LEN		4
-#define PTX_RQST_BUF_LEN		16
+#define PTX_RQST_BUF_LEN		4
+// #define PTX_RQST_BUF_LEN		16
 
 /* Request types */
 #define PTX_CTRL_CH_RQST		0
@@ -52,9 +52,5 @@ void Ptx_Process(Ptx_Control *ptp);
 uint8_t Ptx_Add_Ctrl_Ch_Rqst(Ptx_Control *ptp, uint8_t ctrl_ch);
 
 uint8_t Ptx_Add_Cmd_Rqst(Ptx_Control *ptp, uint8_t cmd);
-
-void Ptx_Ckout_Curr_Rqst(Ptx_Control *ptp);
-
-
 
 #endif
