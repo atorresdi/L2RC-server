@@ -5,8 +5,9 @@
 
 #include "stdint.h"
 
-/* Buffer length */
-#define VCP_BUF_LEN			128U
+/* Buffer lengths */
+#define VCP_BUF_LEN				128U
+#define VCP_BUF_OUT_LEN		32U
 
 /* SW flags */
 #define F_VCP_DATA_AVAIL			0x01U

@@ -24,6 +24,9 @@ void Db_Print_Val(unsigned char ch, unsigned char id)
 {
 	unsigned char i;
 	
+// 	while (!(USART2->SR & TXE)){ };
+// 	USART2->DR = 32;
+	
 	while (!(USART2->SR & TXE)){ };
 	USART2->DR = id;
 	

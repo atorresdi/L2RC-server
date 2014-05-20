@@ -17,8 +17,9 @@
 unsigned char rx_count = 0;
 uint8_t count = 255;
 uint16_t i;
-unsigned int j;
+unsigned int j = 0;
 uint8_t state = 255;
+uint8_t state1 = 255;
 Pro_Package *pkg;
 unsigned char vcp_test_var[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,\
 												 36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,\
@@ -124,8 +125,20 @@ int main(void)
 				{
 					Db_Print_Line(" ");
 					Tm_Clean_Period(&c_time, TEST_PERIOD_NUM);
-// 					Ptx_Add_Cmd_Rqst(&c_ptx, vcp_test_var[i]);
-// 					CDC_Send_DATA("A", 1);
+					prot_sec_num = 0;
+					
+					/* Communication protocol receiver initialization */
+					Prx_Define(&c_prx,
+										 &prot_sec_num,
+										 prx_cmd_buf,
+										 PRX_CMD_BUF_LEN,
+										 prx_pkg_buf,
+										 PRX_PKG_BUF_LEN,
+										 prx_pkg_data);
+	
+					/* Communication protocol transmiter initialization */
+					Ptx_Define(&c_ptx, &prot_sec_num, ptx_rqst_buf, PTX_RQST_BUF_LEN);
+					j = 0;
 				};
 				
 				if (Prx_Pkg_Avail(&c_prx) && (c_prx.pkg_idx_in == 1))
@@ -140,19 +153,40 @@ int main(void)
 						Db_Print_Val(pkg->data[i], ASTERISK);
 					
 					Prx_Ckout_Curr_Pkg(&c_prx);
+					Db_Print_Line(" ");
+					
+					if (!j)
+					{
+						Ptx_Add_Pkg_Rqst(&c_ptx,
+															256,
+// 															85,
+															Ptx_Set_Pkg_Opts(1,5,1),
+															100,
+															vcp_test_var);
+						j = 1;
+					}
+					else
+					{
+						Ptx_Add_Pkg_Rqst(&c_ptx,
+															10,
+// 															22,
+															Ptx_Set_Pkg_Opts(0,5,2),
+															44,
+															&vcp_test_var[9]);
+					};
 				};
 				
-				if (c_prx.state != state)
+				if (c_prx.state != state1)
 				{
-					state = c_prx.state;
-					Db_Print_Val(state, TILDE);
+					state1 = c_prx.state;
+					Db_Print_Val(state1, SLASH);
 				};
 
-// 				if (c_ptx.state != state)
-// 				{
-// 					state = c_ptx.state;
-// 					Db_Print_Val(state, TILDE);
-// 				};
+				if (c_ptx.state != state)
+				{
+					state = c_ptx.state;
+					Db_Print_Val(state, TILDE);
+				};
 			#endif
 		}
 		else
