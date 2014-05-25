@@ -559,7 +559,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>KM-R_LLC-CM9(Server)</GroupName>
+          <GroupName>RDsquare S</GroupName>
           <Files>
             <File>
               <FileName>usb_vcp.c</FileName>
@@ -590,6 +590,11 @@
               <FileName>protocol_tx.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\protocol_tx.c</FilePath>
+            </File>
+            <File>
+              <FileName>dxl_ax.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\dxl_ax.c</FilePath>
             </File>
           </Files>
         </Group>

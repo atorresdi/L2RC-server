@@ -3,6 +3,7 @@
 #include "usb_vcp.h"
 #include "protocol_rx.h"
 #include "protocol_tx.h"
+#include "dxl_ax.h"
 
 #include "debug.h"
 
@@ -63,6 +64,18 @@ uint8_t prx_pkg_data[PRX_PKG_BUF_LEN][PRX_MAX_PKG_DATA_LEN];
 Ptx_Control c_ptx;
 Ptx_Request ptx_rqst_buf[PTX_RQST_BUF_LEN];
 
+/* Dynamixel AX series driver variables */
+Dax_Control c_dax;
+uint8_t dax_inst_pkg[DAX_INST_PKG_MAX_LEN];
+uint8_t dax_stus_pkg[DAX_STUS_PKG_MAX_LEN];
+// uint8_t dax_dev_num = 1;
+uint8_t dax_dev_num = 8;
+// uint8_t dax_id[] = {9};
+uint8_t dax_id[] = {9, 10, 11, 12, 13, 14, 15, 16};
+uint8_t address = 25;
+uint8_t data_size = 0;
+uint8_t data_wr[8] = {1};
+
 int main(void)
 {			
 	/* Time module initialization */
@@ -96,6 +109,9 @@ int main(void)
 	/* Communication protocol transmiter initialization */
 	Ptx_Define(&c_ptx, &prot_sec_num, ptx_rqst_buf, PTX_RQST_BUF_LEN);
 	
+	/* Dinamixel AX series device driver initialization */
+	Dax_Define(&c_dax, dax_dev_num, dax_id, dax_inst_pkg, dax_stus_pkg);
+	
 	while (bDeviceState != CONFIGURED){	};
 	
 	#ifdef DEBUG_ENABLE
@@ -117,7 +133,9 @@ int main(void)
 			
 			Prx_Process(&c_prx);
 			
-			Ptx_Process(&c_ptx);			
+			Ptx_Process(&c_ptx);		
+
+			Dax_Process(&c_dax);
 			
 			#ifdef DEBUG_ENABLE
 			
@@ -125,71 +143,75 @@ int main(void)
 				{
 					Db_Print_Line(" ");
 					Tm_Clean_Period(&c_time, TEST_PERIOD_NUM);
-					prot_sec_num = 0;
-					
-					/* Communication protocol receiver initialization */
-					Prx_Define(&c_prx,
-										 &prot_sec_num,
-										 prx_cmd_buf,
-										 PRX_CMD_BUF_LEN,
-										 prx_pkg_buf,
-										 PRX_PKG_BUF_LEN,
-										 prx_pkg_data);
-	
-					/* Communication protocol transmiter initialization */
-					Ptx_Define(&c_ptx, &prot_sec_num, ptx_rqst_buf, PTX_RQST_BUF_LEN);
-					j = 0;
-				};
-				
-				if (Prx_Pkg_Avail(&c_prx) && (c_prx.pkg_idx_in == 1))
-				{
-					pkg = Prx_Get_Pkg(&c_prx);
-					
-					Db_Print_Val(pkg->length, PLUS);
-					Db_Print_Val(pkg->opts, MINUS);
-					Db_Print_Val(pkg->ptsf, SLASH);
-					
-					for (i = 0; i < pkg->length; i++)
-						Db_Print_Val(pkg->data[i], ASTERISK);
-					
-					Prx_Ckout_Curr_Pkg(&c_prx);
-					Db_Print_Line(" ");
-					
 					if (!j)
-					{
-						Ptx_Add_Pkg_Rqst(&c_ptx,
-															256,
-// 															85,
-															Ptx_Set_Pkg_Opts(1,5,1),
-															100,
-															vcp_test_var);
-						j = 1;
-					}
+// 						j = data_wr[0] = 1;
+					j = data_wr[0] = data_wr[1] = data_wr[2] = data_wr[3] = data_wr[4] = data_wr[5] = data_wr[6] = data_wr[7] = 1;
 					else
-					{
-						Ptx_Add_Pkg_Rqst(&c_ptx,
-															10,
-// 															22,
-															Ptx_Set_Pkg_Opts(0,5,2),
-															44,
-															&vcp_test_var[9]);
-					};
+// 						j = data_wr[0] = 0;
+					j = data_wr[0] = data_wr[1] = data_wr[2] = data_wr[3] = data_wr[4] = data_wr[5] = data_wr[6] = data_wr[7] = 0;
+					
+// 					Dax_Write_Rqst(&c_dax, address, data_size, data_wr);
+// 					Dax_Ping_Rqst(&c_dax);
+					Dax_Read_Rqst(&c_dax, 3, 0);
+					Dax_Set_Stus_Rtn_Lvl(&c_dax, 1);
 				};
 				
-				if (c_prx.state != state1)
+				if (c_dax.dax_state != state1)
 				{
-					state1 = c_prx.state;
+					state1 = c_dax.dax_state;
 					Db_Print_Val(state1, SLASH);
 				};
-
-				if (c_ptx.state != state)
+				
+				if (c_dax.flags & F_DAX_RD_DATA_AVAIL)
 				{
-					state = c_ptx.state;
-					Db_Print_Val(state, TILDE);
+					int n;
+					uint8_t *rd_data_p = c_dax.data_rd;
+					
+					for ( n = 8; n; n--, rd_data_p++)
+						Db_Print_Val(*rd_data_p, ASTERISK);
+					
+					c_dax.flags &= ~F_DAX_RD_DATA_AVAIL;
 				};
+				
+// 				if (c_prx.state != state1)
+// 				{
+// 					state1 = c_prx.state;
+// 					Db_Print_Val(state1, SLASH);
+// 				};
+
+// 				if (c_ptx.state != state)
+// 				{
+// 					state = c_ptx.state;
+// 					Db_Print_Val(state, TILDE);
+// 				};
 			#endif
 		}
 		else
 			Db_Print_Char(EXCLAMATION);
 	};
 } 
+
+void USART1_IRQHandler(void)
+{	
+// 	Db_Print_Char(AT_SIGN);
+	
+	if ( (USART1->SR & USART_SR_RXNE) || (USART1->SR & USART_SR_TXE) )
+	{
+		if (c_dax.flags & F_DAX_PORT_DIR)
+		{Dax_Port_Write(&c_dax); /*Db_Print_Char(AT_SIGN);*/}
+		else
+			Dax_Port_Read(&c_dax);
+	};
+}
+
+void TIM4_IRQHandler(void)
+{
+// 	Db_Print_Char(AT_SIGN);
+	if(TIM4->SR & TIM_SR_UIF) 
+	{
+		TIM4->SR &= ~TIM_SR_UIF; 
+		TIM4->DIER &= ~(TIM_DIER_UIE);						/* TIM4 Update Interrupt disable  */
+		USART1->CR1 &= ~(USART_CR1_RXNEIE);			  /* RXNE interrupt disable */
+		c_dax.flags |= F_DAX_RX_TIMEOUT;
+	};
+}
