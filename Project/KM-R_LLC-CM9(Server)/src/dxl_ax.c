@@ -1,13 +1,12 @@
 /* dxl_ax.c 	Implementation of the Dynamixel AX series driver module */
 
 #include "dxl_ax.h"
-#include "error.h"
 #include "debug.h"
 #include "stm32f10x.h"
 #include <cstdlib>
 
 /* static variables */
-Error dax_err;
+static Error dax_err;
 
 /* static routines */
 static void Dax_Set_Port_Dir(Dax_Control *dap, uint8_t dir)
@@ -95,6 +94,7 @@ void Dax_Define(Dax_Control *dap,
 	NVIC_Init(&NVIC_InitStruct);
 }
 
+/* State machine */
 void Dax_Process(Dax_Control *dap)
 {
 	switch (dap->dax_state)
@@ -173,8 +173,10 @@ void Dax_Process(Dax_Control *dap)
 
 				dap->cksum = ~(dap->cksum);
 				
-				if (((uint8_t)dap->cksum) == rxed_cksum)			/* checksum verification */
+				if ( (((uint8_t)dap->cksum) == rxed_cksum) && (!(dap->stus_pkg[DAX_ERR_POS])) )			/* checksum and package error field verification */
 				{
+					dap->err_num = 0;
+					
 					if (dap->inst_pkg[DAX_INST_POS] == DAX_INST_READ)
 					{
 						stus_pkg = &dap->stus_pkg[DAX_1ST_PARAM_POS];
@@ -202,14 +204,18 @@ void Dax_Process(Dax_Control *dap)
 						dap->dax_state = DAX_SEND_INST_PKG;
 					};
 				}
-				else					/* checksum error */
+				else					/* checksum error or package error filed != 0 */
 				{
 					dap->err_num++;
 					
 					if (dap->err_num >= DAX_MAX_ERR_NUM)
 					{
 						dax_err.dev_instance = *dap->curr_id;
-						dax_err.err_flags = F_DAX_CKSUM_ERR;
+						
+						if (dap->stus_pkg[DAX_ERR_POS])
+							dax_err.err_flags |= dap->stus_pkg[DAX_ERR_POS];
+						else
+							dax_err.err_flags |= F_DAX_CKSUM_ERR;
 						
 						dap->flags |= F_DAX_ERR;
 						dap->flags &= ~F_DAX_RQST_AVAIL;
@@ -218,7 +224,7 @@ void Dax_Process(Dax_Control *dap)
 					};
 					
 					Dax_Start_Port_Write(dap);
-				}
+				};
 			}
 			else if (dap->flags & F_DAX_RX_TIMEOUT)
 			{
@@ -227,7 +233,7 @@ void Dax_Process(Dax_Control *dap)
 				if (dap->err_num >= DAX_MAX_ERR_NUM)
 				{
 					dax_err.dev_instance = *dap->curr_id;
-					dax_err.err_flags = F_DAX_RX_TIMEOUT_ERR;
+					dax_err.err_flags |= F_DAX_RX_TIMEOUT_ERR;
 					
 					dap->flags |= F_DAX_ERR;
 					dap->flags &= ~F_DAX_RQST_AVAIL;
@@ -418,4 +424,31 @@ void Dax_Set_Stus_Rtn_Lvl(Dax_Control *dap, uint8_t return_level)
 		dap->flags |= F_DAX_WAIT_STUS_PKG;
 	else
 		dap->flags &= ~F_DAX_WAIT_STUS_PKG;
+}
+
+/* Check if data is available after a read operation */
+uint8_t Dax_Rd_Data_Avail(Dax_Control *dap)
+{
+	if (dap->flags & F_DAX_RD_DATA_AVAIL)
+		return 1;
+	else
+		return 0;
+}
+
+/* Get the obtained data after a read operation */
+uint8_t *Dax_Get_Rd_Data(Dax_Control *dap)
+{
+	dap->flags &= ~F_DAX_RD_DATA_AVAIL;
+	return dap->data_rd;
+}
+
+uint8_t Dax_Err(Dax_Control *dap)
+{
+	return (dap->flags & F_DAX_ERR);
+}
+
+Error *Dax_Get_Err(Dax_Control *dap)
+{
+	dap->flags &= ~F_DAX_ERR;
+	return (&dax_err);
 }

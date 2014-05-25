@@ -5,6 +5,7 @@
 #include "protocol_tx.h"
 #include "dxl_ax.h"
 
+#include "error.h"
 #include "debug.h"
 
 /* Includes ------------------------------------------------------------------*/
@@ -144,11 +145,9 @@ int main(void)
 					Db_Print_Line(" ");
 					Tm_Clean_Period(&c_time, TEST_PERIOD_NUM);
 					if (!j)
-// 						j = data_wr[0] = 1;
-					j = data_wr[0] = data_wr[1] = data_wr[2] = data_wr[3] = data_wr[4] = data_wr[5] = data_wr[6] = data_wr[7] = 1;
+						j = data_wr[0] = data_wr[1] = data_wr[2] = data_wr[3] = data_wr[4] = data_wr[5] = data_wr[6] = data_wr[7] = 1;
 					else
-// 						j = data_wr[0] = 0;
-					j = data_wr[0] = data_wr[1] = data_wr[2] = data_wr[3] = data_wr[4] = data_wr[5] = data_wr[6] = data_wr[7] = 0;
+						j = data_wr[0] = data_wr[1] = data_wr[2] = data_wr[3] = data_wr[4] = data_wr[5] = data_wr[6] = data_wr[7] = 0;
 					
 // 					Dax_Write_Rqst(&c_dax, address, data_size, data_wr);
 // 					Dax_Ping_Rqst(&c_dax);
@@ -162,16 +161,24 @@ int main(void)
 					Db_Print_Val(state1, SLASH);
 				};
 				
-				if (c_dax.flags & F_DAX_RD_DATA_AVAIL)
+				if (Dax_Rd_Data_Avail(&c_dax))
 				{
 					int n;
-					uint8_t *rd_data_p = c_dax.data_rd;
+					uint8_t *rd_data_p;
+					
+					rd_data_p = Dax_Get_Rd_Data(&c_dax);
 					
 					for ( n = 8; n; n--, rd_data_p++)
 						Db_Print_Val(*rd_data_p, ASTERISK);
+				}
+				else if (Dax_Err(&c_dax))
+				{
+					Error *dax_err = Dax_Get_Err(&c_dax);
 					
-					c_dax.flags &= ~F_DAX_RD_DATA_AVAIL;
+					Db_Print_Val(dax_err->dev_instance, PLUS);
+					Db_Print_Val(dax_err->err_flags, MINUS);
 				};
+				
 				
 // 				if (c_prx.state != state1)
 // 				{
@@ -192,13 +199,11 @@ int main(void)
 } 
 
 void USART1_IRQHandler(void)
-{	
-// 	Db_Print_Char(AT_SIGN);
-	
+{		
 	if ( (USART1->SR & USART_SR_RXNE) || (USART1->SR & USART_SR_TXE) )
 	{
 		if (c_dax.flags & F_DAX_PORT_DIR)
-		{Dax_Port_Write(&c_dax); /*Db_Print_Char(AT_SIGN);*/}
+			Dax_Port_Write(&c_dax);
 		else
 			Dax_Port_Read(&c_dax);
 	};
@@ -206,7 +211,6 @@ void USART1_IRQHandler(void)
 
 void TIM4_IRQHandler(void)
 {
-// 	Db_Print_Char(AT_SIGN);
 	if(TIM4->SR & TIM_SR_UIF) 
 	{
 		TIM4->SR &= ~TIM_SR_UIF; 

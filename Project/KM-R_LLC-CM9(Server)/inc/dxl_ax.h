@@ -4,6 +4,7 @@
 #define DXL_AX_H
 
 #include "stdint.h"
+#include "error.h"
 
 /* Error definitions */
 #define DAX_MAX_ERR_NUM						3
@@ -113,5 +114,13 @@ void Dax_Port_Write(volatile struct Dax_Control *dap);
 void Dax_Port_Read(volatile struct Dax_Control *dap);
 
 void Dax_Set_Stus_Rtn_Lvl(Dax_Control *dap, uint8_t return_level);
+
+uint8_t Dax_Rd_Data_Avail(Dax_Control *dap);
+
+uint8_t *Dax_Get_Rd_Data(Dax_Control *dap);
+
+uint8_t Dax_Err(Dax_Control *dap);
+
+Error *Dax_Get_Err(Dax_Control *dap);
 
 #endif
