@@ -294,6 +294,24 @@ Pro_Package *Prx_Get_Pkg(Prx_Control *prp)
 	return &(prp->pkg_buf[prp->pkg_idx_out]);
 }
 
+/* Get the package type */
+uint8_t	Prx_Get_Pkg_Type(Pro_Package *pkg_p)
+{
+	return ((pkg_p->opts >> 6) & 0x03);
+}
+
+/* Get the package device identifier */ 
+uint8_t	Prx_Get_Pkg_Dev_Id(Pro_Package *pkg_p)
+{
+	return ((pkg_p->opts >> 2) & 0x0F);
+}
+
+/* Get the package data size */
+uint8_t	Prx_Get_Pkg_Data_Size(Pro_Package *pkg_p)
+{
+	return (pkg_p->opts & 0x03);
+}
+
 /* Check out an already used package */
 void Prx_Ckout_Curr_Pkg(Prx_Control *prp)
 {

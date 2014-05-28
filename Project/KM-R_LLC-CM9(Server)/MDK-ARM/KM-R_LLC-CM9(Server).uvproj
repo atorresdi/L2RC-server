@@ -596,6 +596,11 @@
               <FileType>1</FileType>
               <FilePath>..\src\dxl_ax.c</FilePath>
             </File>
+            <File>
+              <FileName>rdd_server.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\rdd_server.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

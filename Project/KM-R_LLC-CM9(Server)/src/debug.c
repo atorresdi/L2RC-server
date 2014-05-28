@@ -20,7 +20,7 @@ void Db_Define(void)
 	USART2->CR1 |= 0x00000008;			/* TX enable */
 }
 
-void Db_Print_Val(unsigned char ch, unsigned char id)
+void Db_Print_Val( unsigned char id, unsigned char ch)
 {
 	unsigned char i;
 	

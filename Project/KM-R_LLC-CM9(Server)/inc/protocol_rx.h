@@ -8,7 +8,6 @@
 /* Buffer lengths */
 #define PRX_CMD_BUF_LEN		2U
 #define PRX_PKG_BUF_LEN		2U
-// #define PRX_CMD_BUF_LEN		32
 
 /* Max package data length */
 #define PRX_MAX_PKG_DATA_LEN		256U
@@ -28,6 +27,9 @@
 #define PRX_PAUSE			0x70U
 #define PRX_RESET			0x72U
 #define PRX_TOKEN			0x74U
+
+/* Package types */
+#define PRX_CONFIG_PKG		0
 
 /* SW flags */
 #define F_PRX_CMD_AVAIL				0x01U
@@ -98,6 +100,14 @@ uint8_t Prx_Get_Ctrl_Ch(Prx_Control *prp);
 uint8_t Prx_Pkg_Avail(Prx_Control *prp);
 
 Pro_Package *Prx_Get_Pkg(Prx_Control *prp);
+
+uint8_t	Prx_Get_Pkg_Type(Pro_Package *pkg_p);
+
+uint8_t	Prx_Get_Pkg_Type(Pro_Package *pkg_p);
+
+uint8_t	Prx_Get_Pkg_Dev_Id(Pro_Package *pkg_p);
+
+uint8_t	Prx_Get_Pkg_Data_Size(Pro_Package *pkg_p);
 
 void Prx_Ckout_Curr_Pkg(Prx_Control *prp);
 

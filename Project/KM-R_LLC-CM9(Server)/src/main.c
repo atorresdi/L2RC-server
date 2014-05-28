@@ -3,6 +3,7 @@
 #include "usb_vcp.h"
 #include "protocol_rx.h"
 #include "protocol_tx.h"
+#include "rdd_server.h"
 #include "dxl_ax.h"
 
 #include "error.h"
@@ -65,17 +66,13 @@ uint8_t prx_pkg_data[PRX_PKG_BUF_LEN][PRX_MAX_PKG_DATA_LEN];
 Ptx_Control c_ptx;
 Ptx_Request ptx_rqst_buf[PTX_RQST_BUF_LEN];
 
+/* Robot Device Driver server variables */
+Rds_Control c_rds;
+
 /* Dynamixel AX series driver variables */
 Dax_Control c_dax;
 uint8_t dax_inst_pkg[DAX_INST_PKG_MAX_LEN];
 uint8_t dax_stus_pkg[DAX_STUS_PKG_MAX_LEN];
-// uint8_t dax_dev_num = 1;
-uint8_t dax_dev_num = 8;
-// uint8_t dax_id[] = {9};
-uint8_t dax_id[] = {9, 10, 11, 12, 13, 14, 15, 16};
-uint8_t address = 25;
-uint8_t data_size = 0;
-uint8_t data_wr[8] = {1};
 
 int main(void)
 {			
@@ -110,8 +107,8 @@ int main(void)
 	/* Communication protocol transmiter initialization */
 	Ptx_Define(&c_ptx, &prot_sec_num, ptx_rqst_buf, PTX_RQST_BUF_LEN);
 	
-	/* Dinamixel AX series device driver initialization */
-	Dax_Define(&c_dax, dax_dev_num, dax_id, dax_inst_pkg, dax_stus_pkg);
+	/* Robot Device Driver server initialization */
+	Rds_Define(&c_rds);
 	
 	while (bDeviceState != CONFIGURED){	};
 	
@@ -136,7 +133,14 @@ int main(void)
 			
 			Ptx_Process(&c_ptx);		
 
-			Dax_Process(&c_dax);
+			if (c_rds.dev_ena_flags & F_RDS_DXL_AX_ENABLE)
+				Dax_Process(&c_dax);
+			
+			if (c_rds.flags & F_RDS_CONFIGURED)
+			{
+			}
+			else 
+				Rds_Configure(&c_rds);
 			
 			#ifdef DEBUG_ENABLE
 			
@@ -144,39 +148,26 @@ int main(void)
 				{
 					Db_Print_Line(" ");
 					Tm_Clean_Period(&c_time, TEST_PERIOD_NUM);
-					if (!j)
-						j = data_wr[0] = data_wr[1] = data_wr[2] = data_wr[3] = data_wr[4] = data_wr[5] = data_wr[6] = data_wr[7] = 1;
-					else
-						j = data_wr[0] = data_wr[1] = data_wr[2] = data_wr[3] = data_wr[4] = data_wr[5] = data_wr[6] = data_wr[7] = 0;
-					
-// 					Dax_Write_Rqst(&c_dax, address, data_size, data_wr);
-// 					Dax_Ping_Rqst(&c_dax);
-					Dax_Read_Rqst(&c_dax, 3, 0);
-					Dax_Set_Stus_Rtn_Lvl(&c_dax, 1);
 				};
 				
-				if (c_dax.dax_state != state1)
-				{
-					state1 = c_dax.dax_state;
-					Db_Print_Val(state1, SLASH);
-				};
+// 				if (Prx_Pkg_Avail(&c_prx))
+// 				{
+// 					Pro_Package *pkg_p;
+// 					pkg_p = Prx_Get_Pkg(&c_prx);
+// 					
+// 					Db_Print_Val('+', pkg_p->length);
+// 					Db_Print_Val('-', pkg_p->opts);
+// 					Db_Print_Val('/', pkg_p->ptsf);
+// 					
+// 					for (i = 0; i < pkg_p->length; i++)
+// 						Db_Print_Val('*', pkg_p->data[i]);
+// 					
+// 				};
 				
-				if (Dax_Rd_Data_Avail(&c_dax))
+				if (c_rds.state != state1)
 				{
-					int n;
-					uint8_t *rd_data_p;
-					
-					rd_data_p = Dax_Get_Rd_Data(&c_dax);
-					
-					for ( n = 8; n; n--, rd_data_p++)
-						Db_Print_Val(*rd_data_p, ASTERISK);
-				}
-				else if (Dax_Err(&c_dax))
-				{
-					Error *dax_err = Dax_Get_Err(&c_dax);
-					
-					Db_Print_Val(dax_err->dev_instance, PLUS);
-					Db_Print_Val(dax_err->err_flags, MINUS);
+					state1 = c_rds.state;
+					Db_Print_Val('~', state1);
 				};
 				
 				
@@ -194,7 +185,7 @@ int main(void)
 			#endif
 		}
 		else
-			Db_Print_Char(EXCLAMATION);
+			Db_Print_Line("USB disconected");
 	};
 } 
 
