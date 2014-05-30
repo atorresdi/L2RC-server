@@ -137,18 +137,18 @@ void Dax_Process(Dax_Control *dap)
 			else
 				dap->dax_state = DAX_WAIT_TX_COMPLETE;
 			
-// 			if (1)
-// 			{
-// 				uint8_t n = dap->pkg_length;
-// 				uint8_t *inst_pkg = dap->inst_pkg;
-// 				
-// 				Db_Print_Val(dap->pkg_length, PLUS);
-// 				
-// 				for ( ; n; n--, inst_pkg++)
-// 					Db_Print_Val(*inst_pkg, ASTERISK);
-// 				
-// 				Db_Print_Val(dap->cksum_base, MINUS);
-// 			};
+			if (1)
+			{
+				uint8_t n = dap->pkg_length;
+				uint8_t *inst_pkg = dap->inst_pkg;
+				
+				Db_Print_Val('$', dap->pkg_length);
+				
+				for ( ; n; n--, inst_pkg++)
+					Db_Print_Val('*', *inst_pkg);
+				
+				Db_Print_Val('k', dap->cksum_base);
+			};
 			
 			break;
 			
@@ -160,11 +160,11 @@ void Dax_Process(Dax_Control *dap)
 				uint8_t n;
 				uint8_t rxed_cksum = dap->stus_pkg[DAX_LENGTH_POS + dap->stus_pkg[DAX_LENGTH_POS]];
 				
-// 				{
-// 				for (n = dap->stus_pkg[DAX_LENGTH_POS] + 1; n; n--, stus_pkg++)
-// 					Db_Print_Val(*stus_pkg, ASTERISK);
-// 				stus_pkg = &dap->stus_pkg[DAX_ID_POS];
-// 				}
+				{
+				for (n = dap->stus_pkg[DAX_LENGTH_POS] + 1; n; n--, stus_pkg++)
+					Db_Print_Val('*', *stus_pkg);
+				stus_pkg = &dap->stus_pkg[DAX_ID_POS];
+				}
 				
 				dap->cksum = 0;
 				
@@ -281,6 +281,7 @@ void Dax_Ping_Rqst(Dax_Control *dap)
 	dap->cksum_base	= DAX_PING_LENGTH + DAX_INST_PING;
 	dap->pkg_cksum_p = &dap->inst_pkg[DAX_PING_PKG_LEN - 1];				/* points to the checksum position of the package */
 	
+	dap->flags &= ~F_DAX_RQST_COMPLETE;
 	dap->flags |= F_DAX_RQST_AVAIL;
 }
 
@@ -301,6 +302,7 @@ void Dax_Write_Rqst(Dax_Control *dap, uint8_t address, uint8_t data_size, uint8_
 	dap->cksum_base	= dap->inst_pkg[DAX_LENGTH_POS] + DAX_INST_WRITE + address;
 	dap->pkg_cksum_p = &dap->inst_pkg[dap->pkg_length - 1];								/* points to the checksum position of the package */
 	
+	dap->flags &= ~F_DAX_RQST_COMPLETE;
 	dap->flags |= F_DAX_RQST_AVAIL;
 }
 
@@ -322,6 +324,7 @@ void Dax_Read_Rqst(Dax_Control *dap, uint8_t address, uint8_t data_size)
 	dap->cksum_base	= DAX_RD_LENGTH + DAX_INST_READ + address + dap->data_size;
 	dap->pkg_cksum_p = &dap->inst_pkg[DAX_RD_PKG_LEN - 1];				/* points to the checksum position of the package */
 	
+	dap->flags &= ~F_DAX_RQST_COMPLETE;
 	dap->flags &= ~F_DAX_RD_DATA_AVAIL;
 	dap->flags |= F_DAX_RQST_AVAIL;
 }
@@ -426,6 +429,12 @@ void Dax_Set_Stus_Rtn_Lvl(Dax_Control *dap, uint8_t return_level)
 		dap->flags &= ~F_DAX_WAIT_STUS_PKG;
 }
 
+/* Check if the request was completed */
+uint8_t Dax_Rqst_Complete(Dax_Control *dap)
+{
+	return (dap->flags & F_DAX_RQST_COMPLETE);
+}
+
 /* Check if data is available after a read operation */
 uint8_t Dax_Rd_Data_Avail(Dax_Control *dap)
 {
@@ -452,3 +461,4 @@ Error *Dax_Get_Err(Dax_Control *dap)
 	dap->flags &= ~F_DAX_ERR;
 	return (&dax_err);
 }
+

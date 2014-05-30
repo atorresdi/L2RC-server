@@ -170,11 +170,10 @@ int main(void)
 					Db_Print_Val('~', state1);
 				};
 				
-				
-// 				if (c_prx.state != state1)
+// 				if (c_dax.dax_state != state)
 // 				{
-// 					state1 = c_prx.state;
-// 					Db_Print_Val(state1, SLASH);
+// 					state = c_dax.dax_state;
+// 					Db_Print_Val('/', state);
 // 				};
 
 // 				if (c_ptx.state != state)

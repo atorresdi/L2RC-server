@@ -29,9 +29,15 @@
 #define RDS_DXL_AX_ID					1
 
 /* Configuration state machine */
-#define RDS_WAIT_CONFIG_PKG					0
-#define RDS_STORE_CONFIG_PARAM			1
-#define RDS_PING										2
+#define RDS_WAIT_CONFIG_PKG									0
+#define RDS_STORE_CONFIG_PARAM							1
+#define RDS_INITIALIZE_DEVS									2
+#define RDS_DAX_PING												3
+#define RDS_DAX_REDUCE_MOVING_SPEED					4
+#define RDS_DAX_SET_INIT_POS								5	
+#define RDS_DAX_WAIT_MOVEMENT_END						6
+#define RDS_DAX_SET_MAX_MOVING_SPEED				7
+#define RDS_DAX_WAIT_RQST_COMPLETE					8
 
 /* Data types */
 typedef struct Rds_Device Rds_Device;
@@ -51,6 +57,7 @@ struct Rds_Control{
 	uint8_t flags;	
 	uint8_t dev_ena_flags;
 	uint8_t state;
+	uint8_t next_state;
 	uint16_t period;					/* execution period (ms) */
 	
 	uint8_t dev_num;					/* number of different type devices */

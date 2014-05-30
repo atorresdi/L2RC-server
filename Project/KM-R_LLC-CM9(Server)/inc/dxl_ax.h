@@ -43,6 +43,10 @@
 #define DAX_INST_READ						0x02
 #define DAX_INST_WRITE					0x03
 
+/* Dynamixel AX series parameters address */
+#define DAX_GOAL_POSITION_ADDR		30
+#define DAX_MOVING_SPEED_ADDR			32
+
 /* Dinamixel AX series package */
 #define DAX_SOP									0xFF		/* Start of package character */
 #define	DAX_ID_POS							2				/* position num of the id field in the package */
@@ -114,6 +118,8 @@ void Dax_Port_Write(volatile struct Dax_Control *dap);
 void Dax_Port_Read(volatile struct Dax_Control *dap);
 
 void Dax_Set_Stus_Rtn_Lvl(Dax_Control *dap, uint8_t return_level);
+
+uint8_t Dax_Rqst_Complete(Dax_Control *dap);
 
 uint8_t Dax_Rd_Data_Avail(Dax_Control *dap);
 

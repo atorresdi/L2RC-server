@@ -1,16 +1,28 @@
 /* rdd_server.h  Implementation of the Robot Device Driver server module */
 
+#include "timing.h"
 #include "rdd_server.h"
 #include "protocol_tx.h"
+#include "dxl_ax.h"
+#include "error.h"
 #include <cstdlib>
 
 #include "debug.h"
 
 /* Extern variables */
+extern struct Tm_Control c_time;
 extern Prx_Control c_prx;
 extern Ptx_Control c_ptx;
+extern Dax_Control c_dax;
+extern uint8_t dax_inst_pkg[DAX_INST_PKG_MAX_LEN];
+extern uint8_t dax_stus_pkg[DAX_STUS_PKG_MAX_LEN];
+
+/* Static variables */
+uint8_t dxl_ax_tmp_data_len;
+uint8_t *dxl_ax_tmp_data;
 
 /* Static routines */
+/* print the configuration parameters values */
 static void Rds_Print_Config(Rds_Control *rdp)
 {
 	uint8_t n;
@@ -48,7 +60,7 @@ static void Rds_Print_Config(Rds_Control *rdp)
 		Db_Print_Val('$', rdp->dev[n].param_rd_num);
 		Db_Print_Line("PARAM_RD_NUM");
 		
-		if (rdp->dev[n].param_wr_num)
+		if (rdp->dev[n].param_rd_num)
 		{
 			for (i = 0; i < rdp->dev[n].param_rd_num; i++)
 				Db_Print_Val('*', rdp->dev[n].param_rd_addr[i]);
@@ -61,12 +73,26 @@ static void Rds_Print_Config(Rds_Control *rdp)
 	};
 }
 
+/* initialize a device */
+void Rds_Initialize_Device(Rds_Control *rdp, Rds_Device *dev)
+{
+	if (dev->dev_id == RDS_DXL_AX_ID)
+	{
+		rdp->dev_ena_flags |= F_RDS_DXL_AX_ENABLE;
+		Dax_Define(&c_dax, dev->inst_num, dev->inst_id, dax_inst_pkg, dax_stus_pkg);
+		dxl_ax_tmp_data_len = 2*(rdp->dev[rdp->dev_idx].inst_num);
+		dxl_ax_tmp_data = (uint8_t *)malloc( dxl_ax_tmp_data_len*sizeof(uint8_t));
+		Dax_Set_Stus_Rtn_Lvl(&c_dax, 1);		
+	}
+}
+
 /* Initialization */
 void Rds_Define(Rds_Control *rdp)
 {
 	rdp->flags = 0;
 	rdp->dev_ena_flags = 0;
 	rdp->state = 0;
+	rdp->next_state = 0;
 	rdp->dev = 0;
 	rdp->dev_idx = 0;
 	rdp->pkg_p = 0;
@@ -143,7 +169,6 @@ void Rds_Configure(Rds_Control *rdp)
 					
 					for ( ; n; n--, param_wr_addr_p++, pkg_data_p++)
 						{*param_wr_addr_p = *pkg_data_p;					Db_Print_Val('*', *param_wr_addr_p);}
-					
 				}
 				else if (rdp->pkg_p->ptsf == P_RDS_PARAM_RD_NUM)
 				{
@@ -156,6 +181,7 @@ void Rds_Configure(Rds_Control *rdp)
 					}
 					else
 					{
+						Rds_Initialize_Device(rdp, &rdp->dev[rdp->dev_idx]);
 						(rdp->dev_idx)++;
 					
 						if (rdp->dev_idx >= rdp->dev_num)
@@ -163,8 +189,9 @@ void Rds_Configure(Rds_Control *rdp)
 							#ifdef DEBUG_ENABLE
 							Rds_Print_Config(rdp);
 							#endif 
-							rdp->dev_ena_flags |= F_RDS_CONFIGURED;
-							rdp->state = RDS_PING;
+							Prx_Ckout_Curr_Pkg(&c_prx);
+							rdp->dev_idx = 0;
+							rdp->state = RDS_INITIALIZE_DEVS;
 							break;
 						};
 					};
@@ -190,15 +217,17 @@ void Rds_Configure(Rds_Control *rdp)
 					if (rdp->dev[rdp->dev_idx].dev_id == RDS_DXL_AX_ID)
 						rdp->dev_ena_flags |= F_RDS_DXL_AX_ENABLE;
 					
+					Rds_Initialize_Device(rdp, &rdp->dev[rdp->dev_idx]);
 					(rdp->dev_idx)++;
 					
 					if (rdp->dev_idx >= rdp->dev_num)
 					{
 						#ifdef DEBUG_ENABLE
 						Rds_Print_Config(rdp);
-						#endif 
-						rdp->dev_ena_flags |= F_RDS_CONFIGURED;
-						rdp->state = RDS_PING;
+						#endif
+						Prx_Ckout_Curr_Pkg(&c_prx);
+						rdp->dev_idx = 0;
+						rdp->state = RDS_INITIALIZE_DEVS;
 						break;
 					};
 				};
@@ -206,6 +235,127 @@ void Rds_Configure(Rds_Control *rdp)
 			
 			Prx_Ckout_Curr_Pkg(&c_prx);
 			rdp->state = RDS_WAIT_CONFIG_PKG;
+			
+			break;
+			
+		case RDS_INITIALIZE_DEVS:					/* Check ping result and start device initialization */
+			
+			if (rdp->dev_idx < rdp->dev_num)
+			{
+				if (rdp->dev[rdp->dev_idx].dev_id == RDS_DXL_AX_ID)
+						rdp->state = RDS_DAX_PING;
+			}
+			else
+			{
+				rdp->flags |= F_RDS_CONFIGURED;
+				rdp->state = 0;
+			};
+			
+			break;
+			
+		case RDS_DAX_PING:
+			
+			Dax_Ping_Rqst(&c_dax);
+			rdp->state = RDS_DAX_WAIT_RQST_COMPLETE;
+			rdp->next_state = RDS_DAX_REDUCE_MOVING_SPEED;
+		
+			break;
+		
+		case RDS_DAX_REDUCE_MOVING_SPEED:
+			
+			{	
+				/* reduce moving speed */
+				uint8_t n = dxl_ax_tmp_data_len;
+				uint8_t *dxl_ax_tmp_data_p = dxl_ax_tmp_data;
+				
+				/* set the moving speed value */
+				for ( ; n; n--, dxl_ax_tmp_data_p++)
+				{
+					if (!(n % 2))
+						*dxl_ax_tmp_data_p = 90;
+					else
+						*dxl_ax_tmp_data_p = 0;
+				};
+				
+				/* Request a write operation to modify the moving speed value */
+				Dax_Write_Rqst(&c_dax, DAX_MOVING_SPEED_ADDR, 1, dxl_ax_tmp_data);
+					
+				rdp->state = RDS_DAX_WAIT_RQST_COMPLETE;
+				rdp->next_state = RDS_DAX_SET_INIT_POS;
+			};
+			
+			break;
+			
+		case RDS_DAX_SET_INIT_POS:
+			
+			if (Prx_Pkg_Avail(&c_prx))
+			{
+				rdp->pkg_p = Prx_Get_Pkg(&c_prx);
+				
+				if (Prx_Get_Pkg_Type(rdp->pkg_p) != PRX_INSTRUCTION_PKG)
+				{
+					Prx_Ckout_Curr_Pkg(&c_prx);
+					break;
+				};
+				
+				/* Request a write operation to set the actuators initial position */
+				Dax_Write_Rqst(&c_dax, DAX_GOAL_POSITION_ADDR, rdp->pkg_p->opts & 0x03, rdp->pkg_p->data);
+				
+				Tm_Start_Timeout(&c_time, RDS_DAX_INIT_POS_TOUT_NUM, RDS_DAX_INIT_POS_TOUT_VAL);
+				
+				rdp->state = RDS_DAX_WAIT_RQST_COMPLETE;
+				rdp->next_state = RDS_DAX_WAIT_MOVEMENT_END;
+			};
+			
+			break;
+			
+		case RDS_DAX_WAIT_MOVEMENT_END:
+			
+			if (Tm_Timeout_Complete(&c_time, RDS_DAX_INIT_POS_TOUT_NUM))
+			{
+					Prx_Ckout_Curr_Pkg(&c_prx);
+					rdp->state = RDS_DAX_SET_MAX_MOVING_SPEED;
+			};
+			
+			break;
+			
+		case RDS_DAX_SET_MAX_MOVING_SPEED:
+			
+			{	
+				/* set maximun moving speed */
+				uint8_t n = dxl_ax_tmp_data_len;
+				uint8_t *dxl_ax_tmp_data_p = dxl_ax_tmp_data;
+				
+				/* set the moving speed value */
+				for ( ; n; n--, dxl_ax_tmp_data_p++)
+					*dxl_ax_tmp_data_p = 0;
+				
+				/* Request a write operation to modify the moving speed value */
+				Dax_Write_Rqst(&c_dax, DAX_MOVING_SPEED_ADDR, 1, dxl_ax_tmp_data);
+				
+				rdp->state = RDS_DAX_WAIT_RQST_COMPLETE;
+				rdp->next_state = RDS_INITIALIZE_DEVS;
+			};
+			
+			break;
+			
+		case RDS_DAX_WAIT_RQST_COMPLETE:
+			
+			if (Dax_Rqst_Complete(&c_dax))
+			{
+				Db_Print_Char('+');
+				if (rdp->next_state == RDS_INITIALIZE_DEVS)
+					(rdp->dev_idx)++;
+				
+				rdp->state = rdp->next_state;
+			}
+			else if (Dax_Err(&c_dax))
+			{
+				Error *dax_err = Dax_Get_Err(&c_dax);
+				Db_Print_Val('-', dax_err->dev_instance);
+				Db_Print_Val('-', dax_err->err_flags);
+				rdp->state = 255;
+			};
 			
 			break;
 	};

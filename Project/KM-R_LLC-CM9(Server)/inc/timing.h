@@ -23,6 +23,9 @@
 #define TEST_TOUT_NUM					0
 #define TEST_TOUT_VAL					960
 
+#define RDS_DAX_INIT_POS_TOUT_NUM		1
+#define RDS_DAX_INIT_POS_TOUT_VAL		5000
+
 /* HW flags */
 
 #define TIMER_OVERFLOW			0x0001U
