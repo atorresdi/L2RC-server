@@ -137,8 +137,7 @@ int main(void)
 				Dax_Process(&c_dax);
 			
 			if (c_rds.flags & F_RDS_CONFIGURED)
-			{
-			}
+				Rds_Process(&c_rds);
 			else 
 				Rds_Configure(&c_rds);
 			

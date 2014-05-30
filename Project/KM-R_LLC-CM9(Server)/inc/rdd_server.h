@@ -39,6 +39,10 @@
 #define RDS_DAX_SET_MAX_MOVING_SPEED				7
 #define RDS_DAX_WAIT_RQST_COMPLETE					8
 
+/* Instruction execution state machine */
+#define RDS_WAIT_INSTR_PKG									0		
+#define RDS_DAX_WAIT_PERIOD									1
+
 /* Data types */
 typedef struct Rds_Device Rds_Device;
 struct Rds_Device{

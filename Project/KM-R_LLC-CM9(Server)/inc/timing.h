@@ -18,6 +18,8 @@
 #define TEST_PERIOD_NUM			0
 #define TEST_PERIOD_VAL			5000
 
+#define INSTR_EXEC_PERIOD_NUM		1
+
 /* Timeouts */
 
 #define TEST_TOUT_NUM					0

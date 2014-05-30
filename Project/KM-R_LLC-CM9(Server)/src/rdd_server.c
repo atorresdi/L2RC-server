@@ -82,7 +82,7 @@ void Rds_Initialize_Device(Rds_Control *rdp, Rds_Device *dev)
 		Dax_Define(&c_dax, dev->inst_num, dev->inst_id, dax_inst_pkg, dax_stus_pkg);
 		dxl_ax_tmp_data_len = 2*(rdp->dev[rdp->dev_idx].inst_num);
 		dxl_ax_tmp_data = (uint8_t *)malloc( dxl_ax_tmp_data_len*sizeof(uint8_t));
-		Dax_Set_Stus_Rtn_Lvl(&c_dax, 1);		
+		Dax_Set_Stus_Rtn_Lvl(&c_dax, 1);
 	}
 }
 
@@ -247,8 +247,9 @@ void Rds_Configure(Rds_Control *rdp)
 			}
 			else
 			{
+				Tm_Start_Period(&c_time, INSTR_EXEC_PERIOD_NUM, rdp->period);
 				rdp->flags |= F_RDS_CONFIGURED;
-				rdp->state = 0;
+				rdp->state = RDS_WAIT_INSTR_PKG;
 			};
 			
 			break;
@@ -361,3 +362,69 @@ void Rds_Configure(Rds_Control *rdp)
 	};
 }
 
+void Rds_Process(Rds_Control *rdp)
+{
+	switch (rdp->state)
+	{
+		case RDS_WAIT_INSTR_PKG:
+			
+			if (Prx_Pkg_Avail(&c_prx))
+			{
+				rdp->pkg_p = Prx_Get_Pkg(&c_prx);
+				
+				if (Prx_Get_Pkg_Type(rdp->pkg_p) != PRX_INSTRUCTION_PKG)
+				{
+					Prx_Ckout_Curr_Pkg(&c_prx);
+					break;
+				};
+				
+				if (Tm_Period_Complete(&c_time, INSTR_EXEC_PERIOD_NUM))
+				{
+					Tm_Clean_Period(&c_time, INSTR_EXEC_PERIOD_NUM);
+					/* Request a write operation */
+					Dax_Write_Rqst(&c_dax, DAX_GOAL_POSITION_ADDR, rdp->pkg_p->opts & 0x03, rdp->pkg_p->data);
+					
+					Tm_Start_Timeout(&c_time, RDS_DAX_INIT_POS_TOUT_NUM, RDS_DAX_INIT_POS_TOUT_VAL);
+					
+					rdp->state = RDS_DAX_WAIT_RQST_COMPLETE;
+				}
+				else
+					rdp->state = RDS_DAX_WAIT_PERIOD;
+			};
+			
+			break;
+			
+		case RDS_DAX_WAIT_PERIOD:
+				
+			if (Tm_Period_Complete(&c_time, INSTR_EXEC_PERIOD_NUM))
+			{
+				Tm_Clean_Period(&c_time, INSTR_EXEC_PERIOD_NUM);
+				/* Request a write operation */
+				Dax_Write_Rqst(&c_dax, DAX_GOAL_POSITION_ADDR, rdp->pkg_p->opts & 0x03, rdp->pkg_p->data);
+				
+				Tm_Start_Timeout(&c_time, RDS_DAX_INIT_POS_TOUT_NUM, RDS_DAX_INIT_POS_TOUT_VAL);
+				
+				rdp->state = RDS_DAX_WAIT_RQST_COMPLETE;
+			};
+			
+			break;
+			
+		case RDS_DAX_WAIT_RQST_COMPLETE:
+			
+			if (Dax_Rqst_Complete(&c_dax))
+			{
+				Db_Print_Char('+');
+				Prx_Ckout_Curr_Pkg(&c_prx);
+				rdp->state = RDS_WAIT_INSTR_PKG;
+			}
+			else if (Dax_Err(&c_dax))
+			{
+				Error *dax_err = Dax_Get_Err(&c_dax);
+				Db_Print_Val('-', dax_err->dev_instance);
+				Db_Print_Val('-', dax_err->err_flags);
+				rdp->state = 255;
+			};
+			
+			break;
+	};
+}

@@ -137,18 +137,18 @@ void Dax_Process(Dax_Control *dap)
 			else
 				dap->dax_state = DAX_WAIT_TX_COMPLETE;
 			
-			if (1)
-			{
-				uint8_t n = dap->pkg_length;
-				uint8_t *inst_pkg = dap->inst_pkg;
-				
-				Db_Print_Val('$', dap->pkg_length);
-				
-				for ( ; n; n--, inst_pkg++)
-					Db_Print_Val('*', *inst_pkg);
-				
-				Db_Print_Val('k', dap->cksum_base);
-			};
+// 			if (1)
+// 			{
+// 				uint8_t n = dap->pkg_length;
+// 				uint8_t *inst_pkg = dap->inst_pkg;
+// 				
+// 				Db_Print_Val('$', dap->pkg_length);
+// 				
+// 				for ( ; n; n--, inst_pkg++)
+// 					Db_Print_Val('*', *inst_pkg);
+// 				
+// 				Db_Print_Val('k', dap->cksum_base);
+// 			};
 			
 			break;
 			
@@ -160,11 +160,11 @@ void Dax_Process(Dax_Control *dap)
 				uint8_t n;
 				uint8_t rxed_cksum = dap->stus_pkg[DAX_LENGTH_POS + dap->stus_pkg[DAX_LENGTH_POS]];
 				
-				{
-				for (n = dap->stus_pkg[DAX_LENGTH_POS] + 1; n; n--, stus_pkg++)
-					Db_Print_Val('*', *stus_pkg);
-				stus_pkg = &dap->stus_pkg[DAX_ID_POS];
-				}
+// 				{
+// 				for (n = dap->stus_pkg[DAX_LENGTH_POS] + 1; n; n--, stus_pkg++)
+// 					Db_Print_Val('*', *stus_pkg);
+// 				stus_pkg = &dap->stus_pkg[DAX_ID_POS];
+// 				}
 				
 				dap->cksum = 0;
 				
