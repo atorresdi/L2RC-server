@@ -3,10 +3,12 @@
 #define DEBUG_H
 
 #define DEBUG_ENABLE
+#ifdef DEBUG_ENABLE
+// 	#define DAX_DEBUG_ENABLE
+	#define RDS_DEBUG_ENABLE
+#endif
 
 /* Baud rate */
-// #define BAUD_RATE		0x00003a95		/*	2400 bps */
-// #define BAUD_RATE		0x00000271		/*	57600 bps */
 #define BAUD_RATE		0x00000135		/*	115200 bps */
 
 /* HW flags */

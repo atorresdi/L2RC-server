@@ -10,23 +10,15 @@
 
 /* Timeouts and periods quantity */
 
-#define NUM_PERIOD		4
-#define NUM_TIMEOUT		4
+#define NUM_PERIOD		1
+#define NUM_TIMEOUT		1
 
 /* Periods */		/* Each time unit is equal to 1 ms	*/
-
-#define TEST_PERIOD_NUM			0
-#define TEST_PERIOD_VAL			5000
-
-#define INSTR_EXEC_PERIOD_NUM		1
+#define INSTR_EXEC_PERIOD_NUM		0
 
 /* Timeouts */
-
-#define TEST_TOUT_NUM					0
-#define TEST_TOUT_VAL					960
-
-#define RDS_DAX_INIT_POS_TOUT_NUM		1
-#define RDS_DAX_INIT_POS_TOUT_VAL		5000
+#define RDS_DAX_INIT_POS_TOUT_NUM		0
+#define RDS_DAX_INIT_POS_TOUT_VAL		3000			/* 3 secs */
 
 /* HW flags */
 

@@ -127,21 +127,21 @@ void Rds_Configure(Rds_Control *rdp)
 			if (!rdp->pkg_dev_id)							/* device identifier == 0 (global parameter) */
 			{
 				if (rdp->pkg_p->ptsf == P_RDS_PERIOD)
-				{rdp->period = *((uint16_t *)rdp->pkg_p->data);	Db_Print_Val('%', (rdp->period >> 8));	Db_Print_Val('%', rdp->period);}
+					rdp->period = *((uint16_t *)rdp->pkg_p->data);
 				else if (rdp->pkg_p->ptsf == P_RDS_DEV_NUM)
 				{
-					rdp->dev_num = *rdp->pkg_p->data;					Db_Print_Val('$', rdp->dev_num);
+					rdp->dev_num = *rdp->pkg_p->data;
 					rdp->dev = (Rds_Device *)malloc( (rdp->dev_num)*sizeof(Rds_Device));
 				};				
 			}
 			else															/* device identifier != 0 (device parameter) */
 			{
 				if (rdp->pkg_p->ptsf == P_RDS_DEV_ID)
-				{rdp->dev[rdp->dev_idx].dev_id = *rdp->pkg_p->data;			Db_Print_Val('%', rdp->dev[rdp->dev_idx].dev_id);}
+					rdp->dev[rdp->dev_idx].dev_id = *rdp->pkg_p->data;
 				else if (rdp->pkg_p->ptsf == P_RDS_INST_NUM)
 				{
-					rdp->dev[rdp->dev_idx].inst_num = *rdp->pkg_p->data;	Db_Print_Val('$', rdp->dev[rdp->dev_idx].inst_num);
-					rdp->dev[rdp->dev_idx].inst_id = (uint8_t *)malloc( (rdp->dev[rdp->dev_idx].inst_num)*sizeof(uint8_t));			Db_Print_Char('o');Db_Print_Char('k');
+					rdp->dev[rdp->dev_idx].inst_num = *rdp->pkg_p->data;
+					rdp->dev[rdp->dev_idx].inst_id = (uint8_t *)malloc( (rdp->dev[rdp->dev_idx].inst_num)*sizeof(uint8_t));
 				}
 				else if (rdp->pkg_p->ptsf == P_RDS_INST_ID)
 				{
@@ -150,16 +150,14 @@ void Rds_Configure(Rds_Control *rdp)
 					uint8_t *pkg_data_p = rdp->pkg_p->data;
 					
 					for ( ; n; n--, inst_id_p++, pkg_data_p++)
-						{*inst_id_p = *pkg_data_p;					Db_Print_Val('*', *inst_id_p);}
+						*inst_id_p = *pkg_data_p;
 				}
 				else if (rdp->pkg_p->ptsf == P_RDS_PARAM_WR_NUM)
 				{
-					rdp->dev[rdp->dev_idx].param_wr_num = *rdp->pkg_p->data;	Db_Print_Val('$', rdp->dev[rdp->dev_idx].param_wr_num);
+					rdp->dev[rdp->dev_idx].param_wr_num = *rdp->pkg_p->data;
 					
 					if (rdp->dev[rdp->dev_idx].param_wr_num)
-					{
-						rdp->dev[rdp->dev_idx].param_wr_addr = (uint8_t *)malloc( (rdp->dev[rdp->dev_idx].param_wr_num)*sizeof(uint8_t));			Db_Print_Char('o');Db_Print_Char('k');
-					};
+						rdp->dev[rdp->dev_idx].param_wr_addr = (uint8_t *)malloc( (rdp->dev[rdp->dev_idx].param_wr_num)*sizeof(uint8_t));
 				}
 				else if (rdp->pkg_p->ptsf == P_RDS_PARAM_WR_ADDR)
 				{
@@ -168,16 +166,16 @@ void Rds_Configure(Rds_Control *rdp)
 					uint8_t *pkg_data_p = rdp->pkg_p->data;
 					
 					for ( ; n; n--, param_wr_addr_p++, pkg_data_p++)
-						{*param_wr_addr_p = *pkg_data_p;					Db_Print_Val('*', *param_wr_addr_p);}
+						*param_wr_addr_p = *pkg_data_p;
 				}
 				else if (rdp->pkg_p->ptsf == P_RDS_PARAM_RD_NUM)
 				{
-					rdp->dev[rdp->dev_idx].param_rd_num = *rdp->pkg_p->data;	Db_Print_Val('$', rdp->dev[rdp->dev_idx].param_rd_num);
+					rdp->dev[rdp->dev_idx].param_rd_num = *rdp->pkg_p->data;
 					
 					if (rdp->dev[rdp->dev_idx].param_rd_num)
 					{
-						rdp->dev[rdp->dev_idx].param_rd_addr = (uint8_t *)malloc( (rdp->dev[rdp->dev_idx].param_rd_num)*sizeof(uint8_t));			Db_Print_Char('o');Db_Print_Char('k');
-						rdp->dev[rdp->dev_idx].param_rd_per = (uint8_t *)malloc( (rdp->dev[rdp->dev_idx].param_rd_num)*sizeof(uint8_t));			Db_Print_Char('o');Db_Print_Char('k');
+						rdp->dev[rdp->dev_idx].param_rd_addr = (uint8_t *)malloc( (rdp->dev[rdp->dev_idx].param_rd_num)*sizeof(uint8_t));
+						rdp->dev[rdp->dev_idx].param_rd_per = (uint8_t *)malloc( (rdp->dev[rdp->dev_idx].param_rd_num)*sizeof(uint8_t));
 					}
 					else
 					{
@@ -187,7 +185,7 @@ void Rds_Configure(Rds_Control *rdp)
 						if (rdp->dev_idx >= rdp->dev_num)
 						{
 							#ifdef DEBUG_ENABLE
-							Rds_Print_Config(rdp);
+								Rds_Print_Config(rdp);
 							#endif 
 							Prx_Ckout_Curr_Pkg(&c_prx);
 							rdp->dev_idx = 0;
@@ -223,7 +221,7 @@ void Rds_Configure(Rds_Control *rdp)
 					if (rdp->dev_idx >= rdp->dev_num)
 					{
 						#ifdef DEBUG_ENABLE
-						Rds_Print_Config(rdp);
+							Rds_Print_Config(rdp);
 						#endif
 						Prx_Ckout_Curr_Pkg(&c_prx);
 						rdp->dev_idx = 0;
@@ -344,7 +342,6 @@ void Rds_Configure(Rds_Control *rdp)
 			
 			if (Dax_Rqst_Complete(&c_dax))
 			{
-				Db_Print_Char('+');
 				if (rdp->next_state == RDS_INITIALIZE_DEVS)
 					(rdp->dev_idx)++;
 				
@@ -353,9 +350,11 @@ void Rds_Configure(Rds_Control *rdp)
 			else if (Dax_Err(&c_dax))
 			{
 				Error *dax_err = Dax_Get_Err(&c_dax);
-				Db_Print_Val('-', dax_err->dev_instance);
-				Db_Print_Val('-', dax_err->err_flags);
 				rdp->state = 255;
+				#ifdef RDS_DEBUG_ENABLE
+					Db_Print_Val('-', dax_err->dev_instance);
+					Db_Print_Val('-', dax_err->err_flags);
+				#endif
 			};
 			
 			break;
@@ -413,16 +412,17 @@ void Rds_Process(Rds_Control *rdp)
 			
 			if (Dax_Rqst_Complete(&c_dax))
 			{
-				Db_Print_Char('+');
 				Prx_Ckout_Curr_Pkg(&c_prx);
 				rdp->state = RDS_WAIT_INSTR_PKG;
 			}
 			else if (Dax_Err(&c_dax))
 			{
 				Error *dax_err = Dax_Get_Err(&c_dax);
-				Db_Print_Val('-', dax_err->dev_instance);
-				Db_Print_Val('-', dax_err->err_flags);
 				rdp->state = 255;
+// 				#ifdef RDS_DEBUG_ENABLE
+// 					Db_Print_Val('-', dax_err->dev_instance);
+// 					Db_Print_Val('-', dax_err->err_flags);
+// 				#endif
 			};
 			
 			break;
