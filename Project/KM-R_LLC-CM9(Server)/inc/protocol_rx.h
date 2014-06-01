@@ -31,6 +31,7 @@
 /* Package types */
 #define PRX_CONFIG_PKG				0
 #define PRX_INSTRUCTION_PKG		1
+#define PRX_ERROR_PKG					2
 
 /* SW flags */
 #define F_PRX_CMD_AVAIL				0x01U

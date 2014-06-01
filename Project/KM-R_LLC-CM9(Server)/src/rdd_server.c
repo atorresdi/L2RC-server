@@ -349,12 +349,8 @@ void Rds_Configure(Rds_Control *rdp)
 			}
 			else if (Dax_Err(&c_dax))
 			{
-				Error *dax_err = Dax_Get_Err(&c_dax);
-				rdp->state = 255;
-				#ifdef RDS_DEBUG_ENABLE
-					Db_Print_Val('-', dax_err->dev_instance);
-					Db_Print_Val('-', dax_err->err_flags);
-				#endif
+				rdp->flags |= F_RDS_CONFIGURED;
+				rdp->state = RDS_WAIT_TOKEN;
 			};
 			
 			break;
@@ -408,21 +404,42 @@ void Rds_Process(Rds_Control *rdp)
 			
 			break;
 			
+		case RDS_WAIT_TOKEN:
+			
+			if (Prx_Cmd_Avail(&c_prx))
+			{
+				uint8_t cmd = Prx_Get_Cmd(&c_prx);
+				
+				if (cmd == PRX_TOKEN)
+				{
+					if (Dax_Err(&c_dax))
+					{
+						Error *dax_err = Dax_Get_Err(&c_dax);
+						uint8_t pkg_opts = Ptx_Set_Pkg_Opts(PRX_ERROR_PKG, RDS_DXL_AX_ID, 0);
+						
+						Ptx_Add_Pkg_Rqst(&c_ptx, 1, pkg_opts, dax_err->dev_instance, &dax_err->err_flags);
+						rdp->state = 255;
+						#ifdef RDS_DEBUG_ENABLE
+							Db_Print_Val('-', dax_err->dev_instance);
+							Db_Print_Val('-', dax_err->err_flags);
+						#endif
+					}
+					else
+					{
+						Ptx_Add_Cmd_Rqst(&c_ptx, PRX_TOKEN);
+						rdp->state = RDS_WAIT_INSTR_PKG;
+					};
+				};
+			};
+			
+			break;
+			
 		case RDS_DAX_WAIT_RQST_COMPLETE:
 			
-			if (Dax_Rqst_Complete(&c_dax))
+			if (Dax_Rqst_Complete(&c_dax) || Dax_Err(&c_dax))
 			{
 				Prx_Ckout_Curr_Pkg(&c_prx);
-				rdp->state = RDS_WAIT_INSTR_PKG;
-			}
-			else if (Dax_Err(&c_dax))
-			{
-				Error *dax_err = Dax_Get_Err(&c_dax);
-				rdp->state = 255;
-// 				#ifdef RDS_DEBUG_ENABLE
-// 					Db_Print_Val('-', dax_err->dev_instance);
-// 					Db_Print_Val('-', dax_err->err_flags);
-// 				#endif
+				rdp->state = RDS_WAIT_TOKEN;
 			};
 			
 			break;

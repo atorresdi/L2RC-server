@@ -2,10 +2,10 @@
 
 #define DEBUG_H
 
-#define DEBUG_ENABLE
+// #define DEBUG_ENABLE
 #ifdef DEBUG_ENABLE
 // 	#define DAX_DEBUG_ENABLE
-	#define RDS_DEBUG_ENABLE
+// 	#define RDS_DEBUG_ENABLE
 #endif
 
 /* Baud rate */

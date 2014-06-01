@@ -14,6 +14,11 @@
 #include "usb_lib.h"
 #include "usb_desc.h"
 #include "usb_pwr.h"
+
+/* debug vars */
+#ifdef DEBUG_ENABLE
+	uint8_t state = 255;
+#endif
 	
 /* Extern variables ----------------------------------------------------------*/
 extern __IO uint8_t Receive_Buffer[64];
@@ -90,6 +95,13 @@ int main(void)
 	
 	while (bDeviceState != CONFIGURED){	};
 	
+	#ifdef DEBUG_ENABLE
+		Db_Print_Line(" ");
+		Db_Print_Line("Modules initialization complete");
+		Db_Print_Line("Virtual COM Port configured");
+		Db_Print_Line(" ");
+	#endif
+	
 	while(1)
 	{
 		if (bDeviceState == CONFIGURED)
@@ -111,6 +123,14 @@ int main(void)
 				Rds_Process(&c_rds);
 			else 
 				Rds_Configure(&c_rds);
+			
+			#ifdef DEBUG_ENABLE
+				if (c_rds.state != state)
+				{
+					state = c_rds.state;
+					Db_Print_Val('~', state);
+				};
+			#endif
 		}
 		else
 		{

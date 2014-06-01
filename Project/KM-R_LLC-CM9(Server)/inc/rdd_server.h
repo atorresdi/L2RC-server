@@ -5,6 +5,7 @@
 
 #include "stdint.h"
 #include "protocol_rx.h"
+#include "error.h"
 
 /* SW flags */
 #define F_RDS_TOKEN						0x01
@@ -42,6 +43,7 @@
 /* Instruction execution state machine */
 #define RDS_WAIT_INSTR_PKG									0		
 #define RDS_DAX_WAIT_PERIOD									1
+#define RDS_WAIT_TOKEN											2
 
 /* Data types */
 typedef struct Rds_Device Rds_Device;
